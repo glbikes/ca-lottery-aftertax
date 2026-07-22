@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  web:
+    container_name: ca-lottery-aftertax
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8742:8742"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8742/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

@@ -1,0 +1,28 @@
+# Umbrel Community App manifest
+# Install via Community Apps / custom app from this folder or a git repo.
+
+manifestVersion: 1
+id: ca-lottery-aftertax
+category: finance
+name: CA Lottery After-Tax
+version: "1.0.0"
+tagline: California Lottery jackpots with after-tax cash estimates
+description: >-
+  Shows Powerball, Mega Millions, and SuperLotto Plus estimated cash values
+  adjusted for the 37% top federal tax rate. California does not tax CA Lottery
+  prizes (0% state). Data is fetched from calottery.com and cached briefly.
+developer: local
+website: https://www.calottery.com/en/draw-games
+dependencies: []
+repo: ""
+support: ""
+port: 8742
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: >-
+  Initial release: three jackpot games, 37% federal after-tax cash estimate,
+  Docker Compose packaging for Umbrel.
+submitter: local
+submission: ""
