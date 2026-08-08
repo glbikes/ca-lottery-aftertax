@@ -246,6 +246,43 @@ h1 {
   text-align: right;
 }
 
+.yield-block {
+  background: rgba(42, 159, 214, 0.08);
+  border: 1px solid rgba(42, 159, 214, 0.22);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+}
+
+.yield-label {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--superlotto);
+  font-weight: 700;
+}
+
+.yield-value {
+  color: #8fd4f0;
+}
+
+.yield-value .per {
+  margin-left: 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.row-muted {
+  font-size: 0.85rem;
+}
+
+.row-muted .row-label,
+.row-muted .row-value {
+  color: var(--muted);
+  font-weight: 500;
+}
+
 .meta {
   margin-top: auto;
   padding-top: 0.35rem;

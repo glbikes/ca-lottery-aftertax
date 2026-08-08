@@ -7,6 +7,8 @@ Self-hosted dashboard for **Powerball**, **Mega Millions**, and **SuperLotto Plu
 | Federal tax | **37%** (max marginal rate) |
 | California state tax | **0%** on California Lottery prizes |
 | Formula | `after_tax_cash = cash_value × 0.63` |
+| Illustrative yield | **4% APY** on prize after-tax cash (money-market ballpark) |
+| Interest income tax | **37%** federal + **13.3%** CA ≈ **50.3%** combined on fully taxable interest |
 
 Data is fetched server-side from [calottery.com draw games](https://www.calottery.com/en/draw-games) and cached for 20 minutes.
 
@@ -74,6 +76,7 @@ Exact Community App install paths vary slightly by Umbrel OS version; if the UI 
 | **After-tax cash** | Estimated take-home if you take the cash option and pay 37% federal tax |
 | **Cash value (pre-tax)** | Lottery’s estimated lump-sum cash option |
 | **Advertised jackpot** | Annuity jackpot estimate (paid over many years if chosen) |
+| **Est. interest @ ~4% (after tax)** | Simple interest on prize after-tax cash, then reduced by ~50.3% ordinary tax on fully taxable interest (37% federal + 13.3% CA). Pretax interest is shown for comparison. US Treasuries are often CA-exempt; NIIT may also apply. |
 
 ## Project layout
 

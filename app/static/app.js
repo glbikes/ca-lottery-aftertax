@@ -106,6 +106,7 @@
               </span>
             </div>
           </div>
+          ${renderYieldBlock(game, data.yield)}
           <div class="meta">
             ${game.next_draw ? `Next draw: <strong>${escapeHtml(game.next_draw)}</strong>` : "Next draw: —"}
             ${game.last_draw ? `<br />Last draw: ${escapeHtml(game.last_draw)}` : ""}
@@ -114,6 +115,60 @@
       `;
       cardsEl.appendChild(card);
     }
+  }
+
+  function yieldRateLabel(yieldMeta) {
+    const rate = yieldMeta && yieldMeta.annual_rate != null
+      ? yieldMeta.annual_rate
+      : 0.04;
+    return `${(rate * 100).toFixed(0)}%`;
+  }
+
+  function interestTaxLabel(yieldMeta) {
+    const combined =
+      yieldMeta && yieldMeta.interest_combined_tax_rate != null
+        ? yieldMeta.interest_combined_tax_rate
+        : 0.503;
+    return `${(combined * 100).toFixed(1)}%`;
+  }
+
+  function renderYieldBlock(game, yieldMeta) {
+    const annual = game.yield_annual_income;
+    const monthly = game.yield_monthly_income;
+    const pretaxAnnual = game.yield_annual_pretax;
+    const pretaxMonthly = game.yield_monthly_pretax;
+    if (annual == null && monthly == null) return "";
+    const pct = yieldRateLabel(yieldMeta);
+    const taxPct = interestTaxLabel(yieldMeta);
+    return `
+          <div class="yield-block">
+            <p class="yield-label">If parked at ~${escapeHtml(pct)} APY (after interest tax)</p>
+            <div class="rows">
+              <div class="row">
+                <span class="row-label">Est. annual interest (after tax)</span>
+                <span class="row-value yield-value" title="${escapeHtml(formatExact(annual))}">
+                  ${escapeHtml(formatMoney(annual))}<span class="per">/yr</span>
+                </span>
+              </div>
+              <div class="row">
+                <span class="row-label">Est. monthly interest (after tax)</span>
+                <span class="row-value yield-value" title="${escapeHtml(formatExact(monthly))}">
+                  ${escapeHtml(formatMoney(monthly))}<span class="per">/mo</span>
+                </span>
+              </div>
+              <div class="row row-muted">
+                <span class="row-label">Pretax interest</span>
+                <span class="row-value" title="${escapeHtml(formatExact(pretaxAnnual))} /yr · ${escapeHtml(formatExact(pretaxMonthly))} /mo">
+                  ${escapeHtml(formatMoney(pretaxAnnual))}<span class="per">/yr</span>
+                  · ${escapeHtml(formatMoney(pretaxMonthly))}<span class="per">/mo</span>
+                </span>
+              </div>
+              <div class="row row-muted">
+                <span class="row-label">Interest tax assumed</span>
+                <span class="row-value">−${escapeHtml(taxPct)} <span class="per">(37% fed + 13.3% CA)</span></span>
+              </div>
+            </div>
+          </div>`;
   }
 
   function escapeHtml(str) {
@@ -138,10 +193,13 @@
     statusEl.textContent = parts.join(" · ");
 
     const tax = data.tax || {};
+    const yld = data.yield || {};
     footerMetaEl.textContent = [
       `Source: ${data.source_url || "calottery.com"}`,
       `Federal rate: ${((tax.federal_rate ?? 0.37) * 100).toFixed(0)}%`,
       `CA state rate: ${((tax.state_rate ?? 0) * 100).toFixed(0)}%`,
+      `Illustrative yield: ${((yld.annual_rate ?? 0.04) * 100).toFixed(0)}% APY`,
+      `Interest tax: ${((yld.interest_combined_tax_rate ?? 0.503) * 100).toFixed(1)}%`,
       data.stale ? "Data may be stale" : null,
     ]
       .filter(Boolean)

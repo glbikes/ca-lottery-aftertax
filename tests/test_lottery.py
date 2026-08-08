@@ -9,10 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
 
 from lottery import (  # noqa: E402
+    INTEREST_COMBINED_TAX_RATE,
     after_tax_cash,
     parse_cash_value,
     parse_draw_games_html,
     parse_money_amount,
+    yield_income,
 )
 
 FIXTURE = Path(__file__).parent / "fixtures" / "draw-games.html"
@@ -34,6 +36,43 @@ def test_after_tax_cash_rejects_bad_input():
         after_tax_cash(-1)
     with pytest.raises(ValueError):
         after_tax_cash(100, federal_rate=1.0)
+
+
+def test_yield_income_default_4_percent_with_interest_tax():
+    # $10M at 4% → $400k pretax; after 50.3% tax → $198,800/yr
+    y = yield_income(10_000_000)
+    assert y.pretax_annual == 400_000
+    assert y.pretax_monthly == 33_333
+    keep = 1.0 - INTEREST_COMBINED_TAX_RATE
+    assert y.after_tax_annual == int(round(10_000_000 * 0.04 * keep))
+    assert y.after_tax_monthly == int(round(10_000_000 * 0.04 * keep / 12.0))
+    assert y.after_tax_annual == 198_800
+
+    # $100M at 4% → $4M pretax → ~$1.988M after tax
+    y = yield_income(100_000_000)
+    assert y.pretax_annual == 4_000_000
+    assert y.pretax_monthly == 333_333
+    assert y.after_tax_annual == 1_988_000
+
+
+def test_yield_income_custom_rate_and_zero():
+    y = yield_income(1_000_000, annual_rate=0.05)
+    assert y.pretax_annual == 50_000
+    assert y.pretax_monthly == 4167
+    assert y.after_tax_annual == int(round(1_000_000 * 0.05 * (1 - INTEREST_COMBINED_TAX_RATE)))
+
+    y0 = yield_income(0)
+    assert y0 == yield_income(0)  # stable zeros
+    assert y0.pretax_annual == 0 and y0.after_tax_annual == 0
+
+
+def test_yield_income_rejects_bad_input():
+    with pytest.raises(ValueError):
+        yield_income(-1)
+    with pytest.raises(ValueError):
+        yield_income(100, annual_rate=-0.01)
+    with pytest.raises(ValueError):
+        yield_income(100, interest_tax_rate=1.0)
 
 
 @pytest.mark.parametrize(
@@ -68,6 +107,11 @@ def test_parse_draw_games_fixture():
     assert pb.jackpot_annuity == 567_000_000
     assert pb.cash_value == 251_800_000
     assert pb.after_tax_cash == 158_634_000
+    assert pb.yield_annual_pretax == 6_345_360  # 158_634_000 × 0.04
+    assert pb.yield_monthly_pretax == 528_780
+    keep = 1.0 - INTEREST_COMBINED_TAX_RATE
+    assert pb.yield_annual_income == int(round(158_634_000 * 0.04 * keep))
+    assert pb.yield_monthly_income == int(round(158_634_000 * 0.04 * keep / 12.0))
     assert pb.next_draw == "WED/JUL 22, 2026"
     assert pb.last_draw == "MON/JUL 20, 2026"
     assert pb.source == "calottery"
@@ -76,8 +120,12 @@ def test_parse_draw_games_fixture():
     assert mm.jackpot_annuity == 743_000_000
     assert mm.cash_value == 323_400_000
     assert mm.after_tax_cash == 203_742_000
+    assert mm.yield_annual_pretax == 8_149_680
+    assert mm.yield_annual_income == int(round(203_742_000 * 0.04 * keep))
 
     sl = by_id["superlotto-plus"]
     assert sl.jackpot_annuity == 39_000_000
     assert sl.cash_value == 17_300_000
     assert sl.after_tax_cash == 10_899_000
+    assert sl.yield_annual_pretax == 435_960
+    assert sl.yield_annual_income == int(round(10_899_000 * 0.04 * keep))

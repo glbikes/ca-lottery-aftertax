@@ -25,10 +25,12 @@
       </div>
     </header>
 
-    <section class="tax-banner" aria-label="Tax assumptions">
+    <section class="tax-banner" aria-label="Tax and yield assumptions">
       <span class="badge">Federal 37%</span>
       <span class="badge badge-muted">CA state 0%</span>
-      <span class="formula">After-tax cash = cash value × 0.63</span>
+      <span class="badge badge-muted">Yield ~4% APY</span>
+      <span class="badge badge-muted">Interest tax ~50.3%</span>
+      <span class="formula">Interest after tax ≈ principal × 4% × (1 − 37% − 13.3%)</span>
     </section>
 
     <main id="cards" class="cards" aria-busy="true">
@@ -39,10 +41,14 @@
 
     <footer class="footer">
       <p>
-        Estimates only — not tax advice. Jackpots and cash values come from
+        Estimates only — not tax or investment advice. Jackpots and cash values come from
         <a href="https://www.calottery.com/en/draw-games" target="_blank" rel="noopener noreferrer">calottery.com</a>.
         Large prizes are typically withheld at 24% federally; your final rate depends on total income.
         The <strong>37%</strong> figure is the current top federal marginal rate used for a conservative take-home estimate.
+        Interest figures use a flat <strong>~4% APY</strong> (money-market ballpark), then subtract
+        <strong>~50.3%</strong> combined ordinary tax on interest (<strong>37%</strong> federal + <strong>13.3%</strong> CA top rate).
+        Unlike lottery prizes, CA <em>does</em> tax most interest. US Treasury interest is often CA-exempt;
+        high earners may also owe ~3.8% NIIT. Actual rates and brackets vary.
       </p>
       <p class="footer-meta" id="footer-meta"></p>
     </footer>

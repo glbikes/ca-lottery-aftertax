@@ -18,6 +18,19 @@ logger = logging.getLogger(__name__)
 FEDERAL_TAX_RATE = 0.37
 STATE_TAX_RATE = 0.0  # California does not tax CA Lottery prizes
 
+# Illustrative "park it safely" yield for large liquid balances (money market /
+# T-bill ballpark as of mid-2026). Not a forecast; rates move with the Fed.
+DEFAULT_YIELD_RATE = 0.04
+
+# Interest / investment income tax (ordinary income) — different from prize tax.
+# Bank & money-market interest is generally taxable federally and by CA.
+# US Treasury interest is typically CA-exempt; we model fully taxable interest
+# (conservative). NIIT (~3.8%) may also apply at high incomes; not included here.
+INTEREST_FEDERAL_TAX_RATE = 0.37  # top ordinary federal bracket
+INTEREST_STATE_TAX_RATE = 0.133  # CA 12.3% + 1% mental-health tax over ~$1M
+# Stacked rates: large SALT bills are mostly non-deductible under the federal cap.
+INTEREST_COMBINED_TAX_RATE = INTEREST_FEDERAL_TAX_RATE + INTEREST_STATE_TAX_RATE
+
 CALOTTERY_DRAW_GAMES_URL = "https://www.calottery.com/en/draw-games"
 USER_AGENT = (
     "CALotteryAfterTax/1.0 (+https://github.com/local/ca-lottery-aftertax; "
@@ -53,6 +66,22 @@ class GameJackpot:
     next_draw: str | None
     last_draw: str | None
     source: str = "calottery"
+    # Illustrative passive income if after-tax cash earned DEFAULT_YIELD_RATE
+    # Primary fields are after interest income tax (fed + CA ordinary rates).
+    yield_annual_income: int = 0
+    yield_monthly_income: int = 0
+    yield_annual_pretax: int = 0
+    yield_monthly_pretax: int = 0
+
+
+@dataclass(frozen=True)
+class YieldIncome:
+    """Simple interest on a principal, pretax and after interest-income tax."""
+
+    pretax_annual: int
+    pretax_monthly: int
+    after_tax_annual: int
+    after_tax_monthly: int
 
 
 def after_tax_cash(cash_value: int, federal_rate: float = FEDERAL_TAX_RATE) -> int:
@@ -62,6 +91,37 @@ def after_tax_cash(cash_value: int, federal_rate: float = FEDERAL_TAX_RATE) -> i
     if not 0 <= federal_rate < 1:
         raise ValueError("federal_rate must be in [0, 1)")
     return int(round(cash_value * (1.0 - federal_rate)))
+
+
+def yield_income(
+    principal: int,
+    annual_rate: float = DEFAULT_YIELD_RATE,
+    interest_tax_rate: float = INTEREST_COMBINED_TAX_RATE,
+) -> YieldIncome:
+    """Return pretax and after-tax simple interest on principal.
+
+    Pretax: annual = principal × rate, monthly = principal × rate / 12.
+    After-tax: multiplies by (1 − interest_tax_rate) for fully taxable interest
+    (e.g. bank / money-market) at top ordinary federal + CA rates.
+    """
+    if principal < 0:
+        raise ValueError("principal must be non-negative")
+    if annual_rate < 0:
+        raise ValueError("annual_rate must be non-negative")
+    if not 0 <= interest_tax_rate < 1:
+        raise ValueError("interest_tax_rate must be in [0, 1)")
+
+    pretax_annual = int(round(principal * annual_rate))
+    pretax_monthly = int(round(principal * annual_rate / 12.0))
+    keep = 1.0 - interest_tax_rate
+    after_tax_annual = int(round(principal * annual_rate * keep))
+    after_tax_monthly = int(round(principal * annual_rate * keep / 12.0))
+    return YieldIncome(
+        pretax_annual=pretax_annual,
+        pretax_monthly=pretax_monthly,
+        after_tax_annual=after_tax_annual,
+        after_tax_monthly=after_tax_monthly,
+    )
 
 
 def parse_money_amount(text: str) -> int | None:
@@ -134,16 +194,23 @@ def parse_draw_games_html(html: str) -> list[GameJackpot]:
             )
             continue
 
+        take_home = after_tax_cash(cash)
+        yld = yield_income(take_home)
+
         games.append(
             GameJackpot(
                 id=game_id,
                 name=game_name,
                 jackpot_annuity=annuity,
                 cash_value=cash,
-                after_tax_cash=after_tax_cash(cash),
+                after_tax_cash=take_home,
                 next_draw=_strong_text(next_el),
                 last_draw=_strong_text(last_el),
                 source="calottery",
+                yield_annual_income=yld.after_tax_annual,
+                yield_monthly_income=yld.after_tax_monthly,
+                yield_annual_pretax=yld.pretax_annual,
+                yield_monthly_pretax=yld.pretax_monthly,
             )
         )
 
@@ -222,6 +289,22 @@ class JackpotCache:
                     "After-tax cash = cash value × (1 − 0.37). "
                     "California does not tax California Lottery prizes. "
                     "Estimate only; not tax advice."
+                ),
+            },
+            "yield": {
+                "annual_rate": DEFAULT_YIELD_RATE,
+                "interest_federal_tax_rate": INTEREST_FEDERAL_TAX_RATE,
+                "interest_state_tax_rate": INTEREST_STATE_TAX_RATE,
+                "interest_combined_tax_rate": INTEREST_COMBINED_TAX_RATE,
+                "label": "Illustrative safe liquid yield (after interest tax)",
+                "note": (
+                    f"Simple interest on prize after-tax cash at "
+                    f"{DEFAULT_YIELD_RATE:.0%} APY, then reduced by ~"
+                    f"{INTEREST_COMBINED_TAX_RATE:.1%} combined ordinary tax "
+                    f"({INTEREST_FEDERAL_TAX_RATE:.0%} federal + "
+                    f"{INTEREST_STATE_TAX_RATE:.1%} CA) on fully taxable interest "
+                    "(bank / money-market style). US Treasuries are often CA-exempt; "
+                    "NIIT (~3.8%) may also apply. Estimate only — not tax/investment advice."
                 ),
             },
             "games": [asdict(g) for g in games],

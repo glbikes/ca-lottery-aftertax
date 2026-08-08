@@ -9,7 +9,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from lottery import FEDERAL_TAX_RATE, STATE_TAX_RATE, cache
+from lottery import (
+    DEFAULT_YIELD_RATE,
+    FEDERAL_TAX_RATE,
+    INTEREST_COMBINED_TAX_RATE,
+    STATE_TAX_RATE,
+    cache,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -36,6 +42,8 @@ async def health() -> dict:
         "status": "ok",
         "federal_tax_rate": FEDERAL_TAX_RATE,
         "state_tax_rate": STATE_TAX_RATE,
+        "yield_rate": DEFAULT_YIELD_RATE,
+        "interest_tax_rate": INTEREST_COMBINED_TAX_RATE,
     }
 
 
