@@ -6,6 +6,11 @@
   const refreshBtn = document.getElementById("refresh-btn");
 
   const AUTO_REFRESH_MS = 15 * 60 * 1000;
+  const EXPECTED_GAMES = [
+    { id: "powerball", name: "Powerball" },
+    { id: "mega-millions", name: "Mega Millions" },
+    { id: "superlotto-plus", name: "SuperLotto Plus" },
+  ];
   let autoTimer = null;
 
   function formatMoney(n) {
@@ -65,18 +70,29 @@
 
   function renderGames(data) {
     const games = data.games || [];
+    const byId = Object.fromEntries(games.map((game) => [game.id, game]));
     cardsEl.innerHTML = "";
     cardsEl.setAttribute("aria-busy", "false");
 
-    if (!games.length) {
+    if (!games.length && !(data.missing_games || []).length) {
       cardsEl.innerHTML = "<p class='meta'>No games available.</p>";
       return;
     }
 
-    for (const game of games) {
-      const card = document.createElement("article");
-      card.className = `card ${game.id}`;
-      card.innerHTML = `
+    for (const expected of EXPECTED_GAMES) {
+      const game = byId[expected.id];
+      if (game) {
+        cardsEl.appendChild(renderGameCard(game, data.yield));
+      } else {
+        cardsEl.appendChild(renderUnavailableCard(expected));
+      }
+    }
+  }
+
+  function renderGameCard(game, yieldMeta) {
+    const card = document.createElement("article");
+    card.className = `card ${game.id}`;
+    card.innerHTML = `
         <div class="card-top" aria-hidden="true"></div>
         <div class="card-body">
           <h2 class="game-name">${escapeHtml(game.name)}</h2>
@@ -106,15 +122,31 @@
               </span>
             </div>
           </div>
-          ${renderYieldBlock(game, data.yield)}
+          ${renderYieldBlock(game, yieldMeta)}
           <div class="meta">
             ${game.next_draw ? `Next draw: <strong>${escapeHtml(game.next_draw)}</strong>` : "Next draw: —"}
             ${game.last_draw ? `<br />Last draw: ${escapeHtml(game.last_draw)}` : ""}
           </div>
         </div>
       `;
-      cardsEl.appendChild(card);
-    }
+    return card;
+  }
+
+  function renderUnavailableCard(game) {
+    const card = document.createElement("article");
+    card.className = `card unavailable ${game.id}`;
+    card.innerHTML = `
+        <div class="card-top" aria-hidden="true"></div>
+        <div class="card-body">
+          <h2 class="game-name">${escapeHtml(game.name)}</h2>
+          <div class="primary">
+            <p class="primary-label">After-tax cash</p>
+            <p class="primary-value">Unavailable</p>
+          </div>
+          <p class="meta">Could not parse this game from calottery.com. Other jackpots are still current.</p>
+        </div>
+      `;
+    return card;
   }
 
   function yieldRateLabel(yieldMeta) {
@@ -190,6 +222,12 @@
     if (data.stale) parts.push("showing cached data");
     if (data.cache_hit && !data.stale) parts.push("cached");
     if (data.rate_limited) parts.push("refresh rate-limited");
+    const missingCount = (data.missing_games || []).length;
+    if (missingCount) {
+      parts.push(
+        missingCount === 1 ? "1 game unavailable" : `${missingCount} games unavailable`
+      );
+    }
     statusEl.textContent = parts.join(" · ");
 
     const tax = data.tax || {};
@@ -245,6 +283,9 @@
       setStatus(data, false);
       if (data.error && data.stale) {
         showError(`Live update failed; showing last good data. (${data.error})`);
+      } else if ((data.missing_games || []).length) {
+        const names = data.missing_games.map((game) => game.name).join(", ");
+        showError(`Could not load ${names} from calottery.com. Other games are current.`);
       }
     } catch (err) {
       setStatus(null, true);

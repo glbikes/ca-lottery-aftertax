@@ -45,6 +45,7 @@ GAME_SELECTORS: dict[str, tuple[str, str]] = {
     "megamillions": ("mega-millions", "Mega Millions"),
     "superlotto": ("superlotto-plus", "SuperLotto Plus"),
 }
+EXPECTED_GAMES: tuple[tuple[str, str], ...] = tuple(GAME_SELECTORS.values())
 
 _MONEY_RE = re.compile(
     r"\$\s*([\d,]+(?:\.\d+)?)\s*(BILLION|MILLION|THOUSAND)?",
@@ -217,6 +218,71 @@ def parse_draw_games_html(html: str) -> list[GameJackpot]:
     return games
 
 
+def missing_expected_games(games: list[GameJackpot]) -> list[dict[str, str]]:
+    """Return expected games that were not present in a successful parse."""
+    parsed_ids = {game.id for game in games}
+    return [
+        {"id": game_id, "name": game_name}
+        for game_id, game_name in EXPECTED_GAMES
+        if game_id not in parsed_ids
+    ]
+
+
+def build_jackpot_payload(
+    games: list[GameJackpot],
+    *,
+    fetched_at: str | None = None,
+) -> dict[str, Any]:
+    """Build the API payload from whatever games parsed.
+
+    Requires at least one game. Missing expected games are listed in
+    ``missing_games`` instead of failing the whole response.
+    """
+    if not games:
+        raise RuntimeError("Expected at least one jackpot game, parsed 0")
+
+    missing = missing_expected_games(games)
+    if missing:
+        logger.warning(
+            "Parsed %d of %d jackpot games; missing %s",
+            len(games),
+            len(EXPECTED_GAMES),
+            [item["id"] for item in missing],
+        )
+
+    return {
+        "fetched_at": fetched_at or datetime.now(timezone.utc).isoformat(),
+        "source_url": CALOTTERY_DRAW_GAMES_URL,
+        "tax": {
+            "federal_rate": FEDERAL_TAX_RATE,
+            "state_rate": STATE_TAX_RATE,
+            "note": (
+                "After-tax cash = cash value × (1 − 0.37). "
+                "California does not tax California Lottery prizes. "
+                "Estimate only; not tax advice."
+            ),
+        },
+        "yield": {
+            "annual_rate": DEFAULT_YIELD_RATE,
+            "interest_federal_tax_rate": INTEREST_FEDERAL_TAX_RATE,
+            "interest_state_tax_rate": INTEREST_STATE_TAX_RATE,
+            "interest_combined_tax_rate": INTEREST_COMBINED_TAX_RATE,
+            "label": "Illustrative safe liquid yield (after interest tax)",
+            "note": (
+                f"Simple interest on prize after-tax cash at "
+                f"{DEFAULT_YIELD_RATE:.0%} APY, then reduced by ~"
+                f"{INTEREST_COMBINED_TAX_RATE:.1%} combined ordinary tax "
+                f"({INTEREST_FEDERAL_TAX_RATE:.0%} federal + "
+                f"{INTEREST_STATE_TAX_RATE:.1%} CA) on fully taxable interest "
+                "(bank / money-market style). US Treasuries are often CA-exempt; "
+                "NIIT (~3.8%) may also apply. Estimate only — not tax/investment advice."
+            ),
+        },
+        "games": [asdict(game) for game in games],
+        "missing_games": missing,
+    }
+
+
 class JackpotCache:
     """In-memory TTL cache with stale-on-error behavior."""
 
@@ -272,43 +338,7 @@ class JackpotCache:
 
     async def _fetch_live(self) -> dict[str, Any]:
         html = await fetch_draw_games_html()
-        games = parse_draw_games_html(html)
-        if len(games) < 3:
-            raise RuntimeError(
-                f"Expected 3 jackpot games, parsed {len(games)}: "
-                f"{[g.id for g in games]}"
-            )
-        fetched_at = datetime.now(timezone.utc).isoformat()
-        return {
-            "fetched_at": fetched_at,
-            "source_url": CALOTTERY_DRAW_GAMES_URL,
-            "tax": {
-                "federal_rate": FEDERAL_TAX_RATE,
-                "state_rate": STATE_TAX_RATE,
-                "note": (
-                    "After-tax cash = cash value × (1 − 0.37). "
-                    "California does not tax California Lottery prizes. "
-                    "Estimate only; not tax advice."
-                ),
-            },
-            "yield": {
-                "annual_rate": DEFAULT_YIELD_RATE,
-                "interest_federal_tax_rate": INTEREST_FEDERAL_TAX_RATE,
-                "interest_state_tax_rate": INTEREST_STATE_TAX_RATE,
-                "interest_combined_tax_rate": INTEREST_COMBINED_TAX_RATE,
-                "label": "Illustrative safe liquid yield (after interest tax)",
-                "note": (
-                    f"Simple interest on prize after-tax cash at "
-                    f"{DEFAULT_YIELD_RATE:.0%} APY, then reduced by ~"
-                    f"{INTEREST_COMBINED_TAX_RATE:.1%} combined ordinary tax "
-                    f"({INTEREST_FEDERAL_TAX_RATE:.0%} federal + "
-                    f"{INTEREST_STATE_TAX_RATE:.1%} CA) on fully taxable interest "
-                    "(bank / money-market style). US Treasuries are often CA-exempt; "
-                    "NIIT (~3.8%) may also apply. Estimate only — not tax/investment advice."
-                ),
-            },
-            "games": [asdict(g) for g in games],
-        }
+        return build_jackpot_payload(parse_draw_games_html(html))
 
 
 async def fetch_draw_games_html() -> str:

@@ -26,7 +26,7 @@ Open: [http://localhost:8742](http://localhost:8742)
 | Endpoint | Description |
 |----------|-------------|
 | `GET /` | Dashboard |
-| `GET /api/jackpots` | JSON jackpots + after-tax |
+| `GET /api/jackpots` | JSON jackpots + after-tax. If one game’s markup fails, the others are still returned and `missing_games` lists the gap. |
 | `POST /api/refresh` | Force refresh (rate-limited to 1/min) |
 | `GET /api/health` | Health check |
 
@@ -44,7 +44,8 @@ Tests:
 
 ```bash
 source .venv/bin/activate
-pytest -q
+pytest -q                 # includes a live calottery.com check; skipped if offline
+pytest -q -m "not network"  # fixture + tax math only
 ```
 
 ## Install on Umbrel (Community App)

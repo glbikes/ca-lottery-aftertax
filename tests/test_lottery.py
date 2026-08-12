@@ -3,14 +3,19 @@
 from pathlib import Path
 import sys
 
+import httpx
 import pytest
+from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
 
 from lottery import (  # noqa: E402
+    CALOTTERY_DRAW_GAMES_URL,
     INTEREST_COMBINED_TAX_RATE,
+    USER_AGENT,
     after_tax_cash,
+    build_jackpot_payload,
     parse_cash_value,
     parse_draw_games_html,
     parse_money_amount,
@@ -129,3 +134,75 @@ def test_parse_draw_games_fixture():
     assert sl.after_tax_cash == 10_899_000
     assert sl.yield_annual_pretax == 435_960
     assert sl.yield_annual_income == int(round(10_899_000 * 0.04 * keep))
+
+
+def test_parse_skips_game_without_cash_value():
+    soup = BeautifulSoup(FIXTURE.read_text(encoding="utf-8"), "lxml")
+    cash_el = soup.select_one("div.card.superlotto .draw-cards--cash-value")
+    assert cash_el is not None
+    cash_el.decompose()
+
+    games = parse_draw_games_html(str(soup))
+    assert {game.id for game in games} == {"powerball", "mega-millions"}
+
+
+def test_build_payload_keeps_partial_parse():
+    soup = BeautifulSoup(FIXTURE.read_text(encoding="utf-8"), "lxml")
+    card = soup.select_one("div.card.superlotto")
+    assert card is not None
+    card.decompose()
+
+    games = parse_draw_games_html(str(soup))
+    payload = build_jackpot_payload(games, fetched_at="2026-08-12T00:00:00+00:00")
+
+    assert [game["id"] for game in payload["games"]] == ["powerball", "mega-millions"]
+    assert payload["missing_games"] == [
+        {"id": "superlotto-plus", "name": "SuperLotto Plus"}
+    ]
+    assert payload["games"][0]["after_tax_cash"] == 158_634_000
+    assert payload["games"][1]["after_tax_cash"] == 203_742_000
+
+
+def test_build_payload_full_fixture_has_no_missing():
+    games = parse_draw_games_html(FIXTURE.read_text(encoding="utf-8"))
+    payload = build_jackpot_payload(games)
+    assert payload["missing_games"] == []
+    assert {game["id"] for game in payload["games"]} == {
+        "powerball",
+        "mega-millions",
+        "superlotto-plus",
+    }
+
+
+def test_build_payload_rejects_empty():
+    with pytest.raises(RuntimeError, match="parsed 0"):
+        build_jackpot_payload([])
+
+
+@pytest.mark.network
+def test_live_calottery_page_still_parses_three_games():
+    try:
+        with httpx.Client(
+            timeout=20.0,
+            follow_redirects=True,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "text/html,application/xhtml+xml",
+            },
+        ) as client:
+            response = client.get(CALOTTERY_DRAW_GAMES_URL)
+            response.raise_for_status()
+            html = response.text
+    except httpx.HTTPError as exc:
+        pytest.skip(f"calottery.com unreachable: {exc}")
+
+    games = parse_draw_games_html(html)
+    assert {game.id for game in games} == {
+        "powerball",
+        "mega-millions",
+        "superlotto-plus",
+    }
+    for game in games:
+        assert game.cash_value > 0
+        assert game.jackpot_annuity > 0
+        assert game.after_tax_cash == int(round(game.cash_value * 0.63))

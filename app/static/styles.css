@@ -183,6 +183,16 @@ h1 {
 .card.mega-millions .card-top { background: var(--mega); }
 .card.superlotto-plus .card-top { background: var(--superlotto); }
 
+.card.unavailable .primary {
+  background: rgba(154, 168, 184, 0.08);
+  border-color: rgba(154, 168, 184, 0.28);
+}
+
+.card.unavailable .primary-label,
+.card.unavailable .primary-value {
+  color: var(--muted);
+}
+
 .card-body {
   padding: 1.2rem 1.25rem 1.35rem;
   display: flex;
