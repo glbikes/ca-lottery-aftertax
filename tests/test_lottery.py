@@ -15,6 +15,7 @@ from lottery import (  # noqa: E402
     INTEREST_COMBINED_TAX_RATE,
     USER_AGENT,
     after_tax_cash,
+    annuity_schedule,
     build_jackpot_payload,
     parse_cash_value,
     parse_draw_games_html,
@@ -80,6 +81,37 @@ def test_yield_income_rejects_bad_input():
         yield_income(100, interest_tax_rate=1.0)
 
 
+def test_annuity_schedule_graduated_30_payments():
+    sched = annuity_schedule(100_000_000)
+    assert len(sched) == 30
+    assert [p.number for p in sched] == list(range(1, 31))
+    # Pretax payments total the advertised jackpot exactly
+    assert sum(p.pretax for p in sched) == 100_000_000
+    # CA Lottery: first ≈ 1.5051%, last ≈ 6.1954% of the jackpot
+    assert sched[0].pretax == 1_505_144
+    assert abs(sched[-1].pretax - 6_195_400) < 100
+    # Each payment ~5% larger than the previous
+    for prev, cur in zip(sched, sched[1:]):
+        assert cur.pretax == pytest.approx(prev.pretax * 1.05, abs=2)
+    # 37% federal on each payment
+    assert sched[0].after_tax == after_tax_cash(1_505_144)
+
+
+def test_annuity_schedule_flat_and_zero():
+    sched = annuity_schedule(1_000, payments=4, growth_rate=0.0)
+    assert [p.pretax for p in sched] == [250, 250, 250, 250]
+    assert all(p.pretax == 0 for p in annuity_schedule(0))
+
+
+def test_annuity_schedule_rejects_bad_input():
+    with pytest.raises(ValueError):
+        annuity_schedule(-1)
+    with pytest.raises(ValueError):
+        annuity_schedule(100, payments=0)
+    with pytest.raises(ValueError):
+        annuity_schedule(100, growth_rate=-0.01)
+
+
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -120,6 +152,9 @@ def test_parse_draw_games_fixture():
     assert pb.next_draw == "WED/JUL 22, 2026"
     assert pb.last_draw == "MON/JUL 20, 2026"
     assert pb.source == "calottery"
+    assert len(pb.annuity_schedule) == 30
+    assert sum(p.pretax for p in pb.annuity_schedule) == 567_000_000
+    assert pb.annuity_after_tax_total == sum(p.after_tax for p in pb.annuity_schedule)
 
     mm = by_id["mega-millions"]
     assert mm.jackpot_annuity == 743_000_000

@@ -31,6 +31,12 @@ INTEREST_STATE_TAX_RATE = 0.133  # CA 12.3% + 1% mental-health tax over ~$1M
 # Stacked rates: large SALT bills are mostly non-deductible under the federal cap.
 INTEREST_COMBINED_TAX_RATE = INTEREST_FEDERAL_TAX_RATE + INTEREST_STATE_TAX_RATE
 
+# Annuity option (Powerball, Mega Millions, SuperLotto Plus alike): one payment
+# at claim plus 29 annual payments, each 5% larger than the last, summing to
+# the advertised jackpot. First payment ≈ 1.5051% of the jackpot.
+ANNUITY_PAYMENTS = 30
+ANNUITY_GROWTH_RATE = 0.05
+
 CALOTTERY_DRAW_GAMES_URL = "https://www.calottery.com/en/draw-games"
 USER_AGENT = (
     "CALotteryAfterTax/1.0 (+https://github.com/local/ca-lottery-aftertax; "
@@ -58,6 +64,15 @@ _CASH_RE = re.compile(
 
 
 @dataclass(frozen=True)
+class AnnuityPayment:
+    """One annuity installment, pretax and after federal prize tax."""
+
+    number: int  # 1 = paid at claim, 2..N = annual thereafter
+    pretax: int
+    after_tax: int
+
+
+@dataclass(frozen=True)
 class GameJackpot:
     id: str
     name: str
@@ -73,6 +88,9 @@ class GameJackpot:
     yield_monthly_income: int = 0
     yield_annual_pretax: int = 0
     yield_monthly_pretax: int = 0
+    # Graduated annuity schedule for the advertised jackpot
+    annuity_after_tax_total: int = 0
+    annuity_schedule: tuple[AnnuityPayment, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -122,6 +140,44 @@ def yield_income(
         pretax_monthly=pretax_monthly,
         after_tax_annual=after_tax_annual,
         after_tax_monthly=after_tax_monthly,
+    )
+
+
+def annuity_schedule(
+    jackpot: int,
+    payments: int = ANNUITY_PAYMENTS,
+    growth_rate: float = ANNUITY_GROWTH_RATE,
+    federal_rate: float = FEDERAL_TAX_RATE,
+) -> tuple[AnnuityPayment, ...]:
+    """Split the advertised jackpot into graduated annuity payments.
+
+    Payment k (0-based) = jackpot × g × (1+g)^k / ((1+g)^n − 1), so the n
+    payments sum to the jackpot. Rounding is absorbed by the final payment so
+    pretax payments total the jackpot exactly. Each payment is taxed at
+    federal_rate (0% CA state tax on CA Lottery prizes).
+    """
+    if jackpot < 0:
+        raise ValueError("jackpot must be non-negative")
+    if payments < 1:
+        raise ValueError("payments must be at least 1")
+    if growth_rate < 0:
+        raise ValueError("growth_rate must be non-negative")
+
+    if growth_rate == 0:
+        weights = [1.0 / payments] * payments
+    else:
+        denom = (1.0 + growth_rate) ** payments - 1.0
+        weights = [growth_rate * (1.0 + growth_rate) ** k / denom for k in range(payments)]
+
+    amounts = [int(round(jackpot * w)) for w in weights]
+    amounts[-1] += jackpot - sum(amounts)
+    return tuple(
+        AnnuityPayment(
+            number=i + 1,
+            pretax=amount,
+            after_tax=after_tax_cash(amount, federal_rate),
+        )
+        for i, amount in enumerate(amounts)
     )
 
 
@@ -197,6 +253,7 @@ def parse_draw_games_html(html: str) -> list[GameJackpot]:
 
         take_home = after_tax_cash(cash)
         yld = yield_income(take_home)
+        schedule = annuity_schedule(annuity)
 
         games.append(
             GameJackpot(
@@ -212,6 +269,8 @@ def parse_draw_games_html(html: str) -> list[GameJackpot]:
                 yield_monthly_income=yld.after_tax_monthly,
                 yield_annual_pretax=yld.pretax_annual,
                 yield_monthly_pretax=yld.pretax_monthly,
+                annuity_after_tax_total=sum(p.after_tax for p in schedule),
+                annuity_schedule=schedule,
             )
         )
 
@@ -276,6 +335,17 @@ def build_jackpot_payload(
                 f"{INTEREST_STATE_TAX_RATE:.1%} CA) on fully taxable interest "
                 "(bank / money-market style). US Treasuries are often CA-exempt; "
                 "NIIT (~3.8%) may also apply. Estimate only — not tax/investment advice."
+            ),
+        },
+        "annuity": {
+            "payments": ANNUITY_PAYMENTS,
+            "growth_rate": ANNUITY_GROWTH_RATE,
+            "note": (
+                f"Annuity option: {ANNUITY_PAYMENTS} graduated payments — one at "
+                f"claim, then {ANNUITY_PAYMENTS - 1} annual payments each "
+                f"{ANNUITY_GROWTH_RATE:.0%} larger than the last — totaling the "
+                "advertised jackpot. Each payment is taxed in the year received; "
+                f"shown at {FEDERAL_TAX_RATE:.0%} federal, 0% CA. Estimate only."
             ),
         },
         "games": [asdict(game) for game in games],

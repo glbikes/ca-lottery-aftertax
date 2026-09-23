@@ -345,6 +345,130 @@ h1 {
   opacity: 0.85;
 }
 
+.link-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  display: block;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.link-btn:hover,
+.link-btn:focus-visible {
+  text-decoration: underline;
+}
+
+.annuity-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.annuity-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.annuity-dialog::backdrop {
+  background: rgba(5, 8, 12, 0.7);
+}
+
+.dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.dialog-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.dialog-close {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#annuity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.5rem 1.25rem 1.25rem;
+}
+
+.accent {
+  color: var(--accent);
+}
+
+.table-wrap {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.annuity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.annuity-table th,
+.annuity-table td {
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.annuity-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.annuity-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.annuity-table .num {
+  text-align: right;
+}
+
+.dialog-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 @media (max-width: 600px) {
   .header-actions {
     align-items: flex-start;

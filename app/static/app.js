@@ -4,6 +4,9 @@
   const errorEl = document.getElementById("error");
   const footerMetaEl = document.getElementById("footer-meta");
   const refreshBtn = document.getElementById("refresh-btn");
+  const annuityDialog = document.getElementById("annuity-dialog");
+  const annuityTitleEl = document.getElementById("annuity-title");
+  const annuityContentEl = document.getElementById("annuity-content");
 
   const AUTO_REFRESH_MS = 15 * 60 * 1000;
   const EXPECTED_GAMES = [
@@ -12,6 +15,7 @@
     { id: "superlotto-plus", name: "SuperLotto Plus" },
   ];
   let autoTimer = null;
+  let latestData = null;
 
   function formatMoney(n) {
     if (n == null || Number.isNaN(n)) return "—";
@@ -110,7 +114,12 @@
               </span>
             </div>
             <div class="row">
-              <span class="row-label">Advertised jackpot</span>
+              <span class="row-label">
+                Advertised jackpot
+                ${game.annuity_schedule && game.annuity_schedule.length
+                  ? `<button type="button" class="link-btn" data-annuity="${escapeHtml(game.id)}">Annuity payouts →</button>`
+                  : ""}
+              </span>
               <span class="row-value" title="${escapeHtml(formatExact(game.jackpot_annuity))}">
                 ${escapeHtml(formatMoney(game.jackpot_annuity))}
               </span>
@@ -203,6 +212,69 @@
           </div>`;
   }
 
+  function openAnnuity(gameId) {
+    const game = latestData && (latestData.games || []).find((g) => g.id === gameId);
+    if (!game || !game.annuity_schedule) return;
+    const schedule = game.annuity_schedule;
+    const meta = latestData.annuity || {};
+    const first = schedule[0];
+    const last = schedule[schedule.length - 1];
+
+    let cumulative = 0;
+    const rows = schedule
+      .map((p) => {
+        cumulative += p.after_tax;
+        const when = p.number === 1 ? "At claim" : `Year ${p.number - 1}`;
+        return `
+            <tr>
+              <td>${p.number}</td>
+              <td>${escapeHtml(when)}</td>
+              <td class="num">${escapeHtml(formatExact(p.pretax))}</td>
+              <td class="num accent">${escapeHtml(formatExact(p.after_tax))}</td>
+              <td class="num">${escapeHtml(formatExact(cumulative))}</td>
+            </tr>`;
+      })
+      .join("");
+
+    annuityTitleEl.textContent = `${game.name} — annuity payouts`;
+    annuityContentEl.innerHTML = `
+      <div class="rows annuity-summary">
+        <div class="row">
+          <span class="row-label">Advertised jackpot (total pre-tax)</span>
+          <span class="row-value">${escapeHtml(formatExact(game.jackpot_annuity))}</span>
+        </div>
+        <div class="row">
+          <span class="row-label">Total after tax (37% federal)</span>
+          <span class="row-value accent">${escapeHtml(formatExact(game.annuity_after_tax_total))}</span>
+        </div>
+        <div class="row">
+          <span class="row-label">First → final payment (after tax)</span>
+          <span class="row-value">${escapeHtml(formatMoney(first.after_tax))} → ${escapeHtml(formatMoney(last.after_tax))}</span>
+        </div>
+        <div class="row row-muted">
+          <span class="row-label">vs. lump sum after tax (cash option)</span>
+          <span class="row-value">${escapeHtml(formatExact(game.after_tax_cash))}</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="annuity-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>When</th>
+              <th class="num">Pre-tax</th>
+              <th class="num">After tax</th>
+              <th class="num">Cumulative</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${meta.note ? `<p class="dialog-note">${escapeHtml(meta.note)}</p>` : ""}
+    `;
+    if (!annuityDialog.open) annuityDialog.showModal();
+  }
+
   function escapeHtml(str) {
     return String(str)
       .replaceAll("&", "&amp;")
@@ -279,6 +351,7 @@
       }
 
       clearError();
+      latestData = data;
       renderGames(data);
       setStatus(data, false);
       if (data.error && data.stale) {
@@ -309,6 +382,15 @@
   }
 
   refreshBtn.addEventListener("click", () => loadJackpots({ force: true }));
+  cardsEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-annuity]");
+    if (btn) openAnnuity(btn.dataset.annuity);
+  });
+  document.getElementById("annuity-close").addEventListener("click", () => annuityDialog.close());
+  annuityDialog.addEventListener("click", (e) => {
+    // Click on the backdrop (outside the dialog box) closes it
+    if (e.target === annuityDialog) annuityDialog.close();
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       loadJackpots({ force: false });
