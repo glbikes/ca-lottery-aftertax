@@ -2,7 +2,6 @@
   const cardsEl = document.getElementById("cards");
   const statusEl = document.getElementById("status");
   const errorEl = document.getElementById("error");
-  const footerMetaEl = document.getElementById("footer-meta");
   const refreshBtn = document.getElementById("refresh-btn");
   const annuityDialog = document.getElementById("annuity-dialog");
   const annuityTitleEl = document.getElementById("annuity-title");
@@ -96,44 +95,31 @@
   function renderGameCard(game, yieldMeta) {
     const card = document.createElement("article");
     card.className = `card ${game.id}`;
+    const federalTax = game.cash_value - game.after_tax_cash;
+    const annuityBtn =
+      game.annuity_schedule && game.annuity_schedule.length
+        ? `<button type="button" class="link-btn" data-annuity="${escapeHtml(game.id)}">Annuity schedule →</button>`
+        : "";
     card.innerHTML = `
         <div class="card-top" aria-hidden="true"></div>
         <div class="card-body">
-          <h2 class="game-name">${escapeHtml(game.name)}</h2>
+          <h2 class="game-name">
+            ${escapeHtml(game.name)}
+            <span class="game-jackpot"> · ${escapeHtml(formatMoney(game.jackpot_annuity))} jackpot</span>
+          </h2>
           <div class="primary">
-            <p class="primary-label">After-tax cash (37% federal)</p>
+            <p class="primary-label">After-tax cash</p>
             <p class="primary-value" title="${escapeHtml(formatExact(game.after_tax_cash))}">
               ${escapeHtml(formatMoney(game.after_tax_cash))}
             </p>
-          </div>
-          <div class="rows">
-            <div class="row">
-              <span class="row-label">Cash value (pre-tax)</span>
-              <span class="row-value" title="${escapeHtml(formatExact(game.cash_value))}">
-                ${escapeHtml(formatMoney(game.cash_value))}
-              </span>
-            </div>
-            <div class="row">
-              <span class="row-label">
-                Advertised jackpot
-                ${game.annuity_schedule && game.annuity_schedule.length
-                  ? `<button type="button" class="link-btn" data-annuity="${escapeHtml(game.id)}">Annuity payouts →</button>`
-                  : ""}
-              </span>
-              <span class="row-value" title="${escapeHtml(formatExact(game.jackpot_annuity))}">
-                ${escapeHtml(formatMoney(game.jackpot_annuity))}
-              </span>
-            </div>
-            <div class="row">
-              <span class="row-label">Federal tax @ 37%</span>
-              <span class="row-value" title="${escapeHtml(formatExact(game.cash_value - game.after_tax_cash))}">
-                −${escapeHtml(formatMoney(game.cash_value - game.after_tax_cash))}
-              </span>
-            </div>
+            <p class="math-line" title="${escapeHtml(formatExact(game.cash_value))} cash − ${escapeHtml(formatExact(federalTax))} federal">
+              ${escapeHtml(formatMoney(game.cash_value))} cash − ${escapeHtml(formatMoney(federalTax))} federal
+            </p>
           </div>
           ${renderYieldBlock(game, yieldMeta)}
           <div class="meta">
             ${game.next_draw ? `Next draw: <strong>${escapeHtml(game.next_draw)}</strong>` : "Next draw: —"}
+            ${annuityBtn ? ` · ${annuityBtn}` : ""}
             ${game.last_draw ? `<br />Last draw: ${escapeHtml(game.last_draw)}` : ""}
           </div>
         </div>
@@ -180,35 +166,29 @@
     const pretaxMonthly = game.yield_monthly_pretax;
     if (annual == null && monthly == null) return "";
     const pct = yieldRateLabel(yieldMeta);
-    const taxPct = interestTaxLabel(yieldMeta);
     return `
-          <div class="yield-block">
-            <p class="yield-label">If parked at ~${escapeHtml(pct)} APY (after interest tax)</p>
-            <div class="rows">
-              <div class="row">
-                <span class="row-label">Est. annual interest (after tax)</span>
-                <span class="row-value yield-value" title="${escapeHtml(formatExact(annual))}">
-                  ${escapeHtml(formatMoney(annual))}<span class="per">/yr</span>
-                </span>
+          <div class="yield-compact">
+            <p class="yield-one-liner" title="${escapeHtml(formatExact(monthly))} /mo after tax">
+              ≈ ${escapeHtml(formatMoney(monthly))}/mo after tax if parked at ${escapeHtml(pct)}
+            </p>
+            <details class="yield-details">
+              <summary>Interest details</summary>
+              <div class="rows">
+                <div class="row">
+                  <span class="row-label">Annual (after tax)</span>
+                  <span class="row-value" title="${escapeHtml(formatExact(annual))}">
+                    ${escapeHtml(formatMoney(annual))}<span class="per">/yr</span>
+                  </span>
+                </div>
+                <div class="row row-muted">
+                  <span class="row-label">Pretax</span>
+                  <span class="row-value" title="${escapeHtml(formatExact(pretaxAnnual))} /yr · ${escapeHtml(formatExact(pretaxMonthly))} /mo">
+                    ${escapeHtml(formatMoney(pretaxAnnual))}<span class="per">/yr</span>
+                    · ${escapeHtml(formatMoney(pretaxMonthly))}<span class="per">/mo</span>
+                  </span>
+                </div>
               </div>
-              <div class="row">
-                <span class="row-label">Est. monthly interest (after tax)</span>
-                <span class="row-value yield-value" title="${escapeHtml(formatExact(monthly))}">
-                  ${escapeHtml(formatMoney(monthly))}<span class="per">/mo</span>
-                </span>
-              </div>
-              <div class="row row-muted">
-                <span class="row-label">Pretax interest</span>
-                <span class="row-value" title="${escapeHtml(formatExact(pretaxAnnual))} /yr · ${escapeHtml(formatExact(pretaxMonthly))} /mo">
-                  ${escapeHtml(formatMoney(pretaxAnnual))}<span class="per">/yr</span>
-                  · ${escapeHtml(formatMoney(pretaxMonthly))}<span class="per">/mo</span>
-                </span>
-              </div>
-              <div class="row row-muted">
-                <span class="row-label">Interest tax assumed</span>
-                <span class="row-value">−${escapeHtml(taxPct)} <span class="per">(37% fed + 13.3% CA)</span></span>
-              </div>
-            </div>
+            </details>
           </div>`;
   }
 
@@ -292,28 +272,8 @@
     const parts = [];
     parts.push(`Updated ${formatWhen(data.fetched_at)}`);
     if (data.stale) parts.push("showing cached data");
-    if (data.cache_hit && !data.stale) parts.push("cached");
     if (data.rate_limited) parts.push("refresh rate-limited");
-    const missingCount = (data.missing_games || []).length;
-    if (missingCount) {
-      parts.push(
-        missingCount === 1 ? "1 game unavailable" : `${missingCount} games unavailable`
-      );
-    }
     statusEl.textContent = parts.join(" · ");
-
-    const tax = data.tax || {};
-    const yld = data.yield || {};
-    footerMetaEl.textContent = [
-      `Source: ${data.source_url || "calottery.com"}`,
-      `Federal rate: ${((tax.federal_rate ?? 0.37) * 100).toFixed(0)}%`,
-      `CA state rate: ${((tax.state_rate ?? 0) * 100).toFixed(0)}%`,
-      `Illustrative yield: ${((yld.annual_rate ?? 0.04) * 100).toFixed(0)}% APY`,
-      `Interest tax: ${((yld.interest_combined_tax_rate ?? 0.503) * 100).toFixed(1)}%`,
-      data.stale ? "Data may be stale" : null,
-    ]
-      .filter(Boolean)
-      .join(" · ");
   }
 
   function showError(message) {
@@ -354,11 +314,9 @@
       latestData = data;
       renderGames(data);
       setStatus(data, false);
+      // Must-fix 3: partial missing games stay on the Unavailable card only.
       if (data.error && data.stale) {
         showError(`Live update failed; showing last good data. (${data.error})`);
-      } else if ((data.missing_games || []).length) {
-        const names = data.missing_games.map((game) => game.name).join(", ");
-        showError(`Could not load ${names} from calottery.com. Other games are current.`);
       }
     } catch (err) {
       setStatus(null, true);
