@@ -124,15 +124,17 @@ h1 {
 }
 
 .tax-banner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.75rem;
-  align-items: center;
-  background: var(--accent-dim);
-  border: 1px solid rgba(62, 207, 142, 0.25);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.tax-assumptions {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
 }
 
 .badge {
@@ -294,14 +296,27 @@ h1 {
 }
 
 .meta {
-  margin-top: auto;
+  margin-top: 0.25rem;
   padding-top: 0.35rem;
   font-size: 0.82rem;
   color: var(--muted);
 }
 
+.meta-line {
+  margin: 0;
+}
+
+.meta-line + .meta-line {
+  margin-top: 0.35rem;
+}
+
+.meta-annuity .link-btn {
+  display: inline;
+  margin-left: 0;
+}
+
 .error {
-  margin-top: 1.25rem;
+  margin: 0 0 1.25rem;
   padding: 0.9rem 1rem;
   border-radius: 12px;
   background: rgba(240, 113, 120, 0.1);
@@ -511,10 +526,6 @@ h1 {
 .yield-details .rows {
   margin-top: 0.45rem;
 }
-.tax-banner .badge:only-child {
-  background: rgba(62, 207, 142, 0.12);
-  border-color: rgba(62, 207, 142, 0.28);
-}
 .formula { display: none; }
 
 
@@ -532,10 +543,6 @@ h1 {
   color: var(--muted);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-}
-.meta .link-btn {
-  display: inline;
-  margin-left: 0.15rem;
 }
 
 

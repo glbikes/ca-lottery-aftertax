@@ -118,9 +118,8 @@
           </div>
           ${renderYieldBlock(game, yieldMeta)}
           <div class="meta">
-            ${game.next_draw ? `Next draw: <strong>${escapeHtml(game.next_draw)}</strong>` : "Next draw: —"}
-            ${annuityBtn ? ` · ${annuityBtn}` : ""}
-            ${game.last_draw ? `<br />Last draw: ${escapeHtml(game.last_draw)}` : ""}
+            <p class="meta-line">${game.next_draw ? `Next draw: <strong>${escapeHtml(game.next_draw)}</strong>` : "Next draw: —"}</p>
+            ${annuityBtn ? `<p class="meta-line meta-annuity">${annuityBtn}</p>` : ""}
           </div>
         </div>
       `;
