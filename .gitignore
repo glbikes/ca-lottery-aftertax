@@ -8,3 +8,8 @@ __pycache__/
 dist/
 build/
 .env
+
+# Local design scratch
+.preview/
+app/static-backup-*/
+app/static-proposed/

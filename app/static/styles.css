@@ -14,6 +14,7 @@
   --superlotto: #2a9fd6;
   --radius: 16px;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --tap: 44px;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -42,52 +43,69 @@ a {
   color: var(--accent);
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .page {
   max-width: 1100px;
   margin: 0 auto;
   padding: 1.75rem 1.25rem 3rem;
 }
 
+/* ---------- Header ---------- */
+
 .header {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem;
+  gap: 0.75rem 1.25rem;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1.25rem;
 }
 
-.eyebrow {
-  margin: 0 0 0.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-weight: 600;
-}
-
 h1 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.35rem;
   font-size: clamp(1.6rem, 3vw, 2.1rem);
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.subtitle {
+.tax-assumptions {
   margin: 0;
-  max-width: 40rem;
   color: var(--muted);
-  font-size: 0.98rem;
+  font-size: 0.9rem;
+}
+
+.tax-assumptions a {
+  text-underline-offset: 2px;
 }
 
 .header-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .status {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--muted);
   text-align: right;
 }
@@ -96,74 +114,56 @@ h1 {
   color: var(--warn);
 }
 
-.btn {
+.btn-icon {
   appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
   border: 1px solid var(--border);
+  border-radius: 999px;
   background: var(--surface-2);
   color: var(--text);
-  border-radius: 999px;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.btn:hover:not(:disabled) {
+.btn-icon:hover:not(:disabled) {
   background: #2c3848;
   border-color: #4a5b70;
 }
 
-.btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.btn:disabled {
-  opacity: 0.55;
+.btn-icon:disabled {
   cursor: wait;
 }
 
-.tax-banner {
+.btn-icon.is-spinning svg {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Error ---------- */
+
+.error {
   margin: 0 0 1.25rem;
-  padding: 0;
-  background: none;
-  border: none;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: rgba(240, 113, 120, 0.1);
+  border: 1px solid rgba(240, 113, 120, 0.35);
+  color: #ffc9cc;
 }
 
-.tax-assumptions {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.4;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.65rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #062016;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.badge-muted {
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.formula {
-  color: var(--muted);
-  font-size: 0.88rem;
-  margin-left: auto;
-}
+/* ---------- Cards ---------- */
 
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.1rem;
+  align-items: start;
 }
 
 .card {
@@ -174,7 +174,6 @@ h1 {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 280px;
 }
 
 .card-top {
@@ -185,18 +184,8 @@ h1 {
 .card.mega-millions .card-top { background: var(--mega); }
 .card.superlotto-plus .card-top { background: var(--superlotto); }
 
-.card.unavailable .primary {
-  background: rgba(154, 168, 184, 0.08);
-  border-color: rgba(154, 168, 184, 0.28);
-}
-
-.card.unavailable .primary-label,
-.card.unavailable .primary-value {
-  color: var(--muted);
-}
-
 .card-body {
-  padding: 1.2rem 1.25rem 1.35rem;
+  padding: 1.2rem 1.25rem 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -205,17 +194,22 @@ h1 {
 
 .game-name {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
-.primary {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0.15rem 0 0.25rem;
+.game-jackpot {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .primary-label {
@@ -232,104 +226,165 @@ h1 {
   font-size: clamp(1.7rem, 4vw, 2.15rem);
   font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1.15;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 
-.rows {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.95rem;
-}
-
-.row-label {
+.math-line {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
   color: var(--muted);
-}
-
-.row-value {
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: right;
 }
 
-.yield-block {
-  background: rgba(42, 159, 214, 0.08);
-  border: 1px solid rgba(42, 159, 214, 0.22);
-  border-radius: 12px;
-  padding: 0.75rem 0.9rem;
-}
-
-.yield-label {
-  margin: 0 0 0.55rem;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--superlotto);
-  font-weight: 700;
-}
-
-.yield-value {
-  color: #8fd4f0;
-}
-
-.yield-value .per {
-  margin-left: 0.15rem;
-  font-size: 0.78rem;
-  font-weight: 500;
+.card.unavailable .primary-label,
+.card.unavailable .primary-value {
   color: var(--muted);
-}
-
-.row-muted {
-  font-size: 0.85rem;
-}
-
-.row-muted .row-label,
-.row-muted .row-value {
-  color: var(--muted);
-  font-weight: 500;
 }
 
 .meta {
-  margin-top: 0.25rem;
-  padding-top: 0.35rem;
+  margin: 0;
   font-size: 0.82rem;
   color: var(--muted);
 }
 
-.meta-line {
+/* Interest */
+
+.yield-one-liner {
   margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.meta-line + .meta-line {
-  margin-top: 0.35rem;
+.yield-one-liner strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
-.meta-annuity .link-btn {
-  display: inline;
-  margin-left: 0;
+.yield-panel {
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.error {
-  margin: 0 0 1.25rem;
-  padding: 0.9rem 1rem;
-  border-radius: 12px;
-  background: rgba(240, 113, 120, 0.1);
-  border: 1px solid rgba(240, 113, 120, 0.35);
-  color: #ffc9cc;
+.yield-panel[hidden] {
+  display: none;
 }
 
-.hidden {
-  display: none !important;
+.yield-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
 }
+
+.yield-grid th,
+.yield-grid td {
+  padding: 0.2rem 0;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.yield-grid thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.yield-grid .num {
+  text-align: right;
+  padding-left: 1rem;
+}
+
+.yield-grid .is-strong th,
+.yield-grid .is-strong td {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Footer of card: draw date + actions */
+
+.card-foot {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.draw-line {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.draw-line strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.draw-rel {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.draw-rel.is-tonight {
+  background: var(--accent-dim);
+  border-color: rgba(62, 207, 142, 0.4);
+  color: var(--accent);
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+  margin: 0.15rem 0 0;
+}
+
+.card-action {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.card-action:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.card-action .chev {
+  transition: transform 0.15s ease;
+}
+
+.card-action[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
+}
+
+/* ---------- Skeleton ---------- */
 
 .skeleton {
-  height: 280px;
+  height: 300px;
   border-radius: var(--radius);
   background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
   background-size: 200% 100%;
@@ -342,6 +397,8 @@ h1 {
   100% { background-position: -200% 0; }
 }
 
+/* ---------- Footer ---------- */
+
 .footer {
   margin-top: 2rem;
   padding-top: 1.25rem;
@@ -350,38 +407,53 @@ h1 {
   font-size: 0.85rem;
 }
 
-.footer p {
-  margin: 0 0 0.6rem;
+.footer > p {
+  margin: 0 0 0.25rem;
   max-width: 55rem;
 }
 
-.footer-meta {
-  font-size: 0.8rem;
-  opacity: 0.85;
-}
-
-.link-btn {
-  appearance: none;
-  border: 0;
-  background: none;
-  display: block;
-  padding: 0;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent);
+.calc-details summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
   cursor: pointer;
-  white-space: nowrap;
+  color: var(--muted);
 }
 
-.link-btn:hover,
-.link-btn:focus-visible {
-  text-decoration: underline;
+.calc-details summary::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: 0 0.6rem 0 0.1rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
 }
+
+.calc-details[open] summary::before {
+  transform: rotate(45deg);
+}
+
+.calc-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.calc-details summary {
+  list-style: none;
+}
+
+.calc-details p {
+  margin: 0.25rem 0 0.6rem;
+  max-width: 48rem;
+  line-height: 1.5;
+}
+
+/* ---------- Annuity dialog ---------- */
 
 .annuity-dialog {
-  width: min(680px, calc(100vw - 32px));
-  max-height: calc(100vh - 48px);
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
   padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -404,7 +476,7 @@ h1 {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.25rem 0.5rem;
+  padding: 0.75rem 0.75rem 0.25rem 1.25rem;
 }
 
 .dialog-head h2 {
@@ -414,32 +486,72 @@ h1 {
 
 .dialog-close {
   appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
   border: 1px solid var(--border);
+  border-radius: 999px;
   background: var(--surface-2);
   color: var(--text);
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  font-size: 1.2rem;
-  line-height: 1;
   cursor: pointer;
 }
 
 #annuity-content {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.85rem;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0.5rem 1.25rem 1.25rem;
+  overflow: auto;
+  padding: 0.25rem 1.25rem 1.25rem;
 }
 
 .accent {
   color: var(--accent);
 }
 
+.annuity-lead {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.annuity-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.annuity-summary > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.annuity-summary dt {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.annuity-summary dd {
+  margin: 0.15rem 0 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .table-wrap {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   overflow: auto;
   min-height: 0;
   border: 1px solid var(--border);
@@ -455,19 +567,23 @@ h1 {
 
 .annuity-table th,
 .annuity-table td {
-  padding: 0.4rem 0.7rem;
+  padding: 0.45rem 0.7rem;
   text-align: left;
   white-space: nowrap;
 }
 
-.annuity-table th {
+.annuity-table thead th {
   position: sticky;
   top: 0;
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.annuity-table tbody th {
+  font-weight: 500;
 }
 
 .annuity-table tbody tr:nth-child(even) {
@@ -478,17 +594,39 @@ h1 {
   text-align: right;
 }
 
+.table-wrap.is-condensed .is-extra {
+  display: none;
+}
+
+.v-short {
+  display: none;
+}
+
+.toggle-all {
+  align-self: flex-start;
+  min-height: auto;
+  padding: 0.6rem 0;
+}
+
 .dialog-note {
   margin: 0;
   font-size: 0.8rem;
   color: var(--muted);
 }
 
+/* ---------- Small screens ---------- */
+
 @media (max-width: 600px) {
+  .page {
+    padding-top: 1.25rem;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
   .header-actions {
-    align-items: flex-start;
     width: 100%;
-    flex-direction: row;
     justify-content: space-between;
   }
 
@@ -496,88 +634,59 @@ h1 {
     text-align: left;
   }
 
-  .formula {
-    margin-left: 0;
-    width: 100%;
+  .annuity-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .v-exact {
+    display: none;
+  }
+
+  .v-short {
+    display: inline;
+  }
+
+  .annuity-table {
+    font-size: 0.84rem;
+  }
+
+  .annuity-table th,
+  .annuity-table td {
+    padding: 0.45rem 0.45rem;
+  }
+
+  .annuity-table th:first-child,
+  .annuity-table td:first-child {
+    padding-left: 0.65rem;
+  }
+
+  .annuity-table th:last-child,
+  .annuity-table td:last-child {
+    padding-right: 0.65rem;
+  }
+
+  .annuity-table thead th {
+    font-size: 0.66rem;
+    letter-spacing: 0.02em;
+  }
+
+  #annuity-content {
+    padding: 0.25rem 1rem 1rem;
   }
 }
 
+/* ---------- Motion ---------- */
 
-/* Proposed must-fix 1+2: compact interest */
-.yield-compact {
-  margin-top: 0.15rem;
-}
-.yield-one-liner {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-.yield-details {
-  margin-top: 0.35rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.yield-details summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-.yield-details .rows {
-  margin-top: 0.45rem;
-}
-.formula { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 
-
-/* Must-fix 4: jackpot in title + compact math under headline */
-.game-name .game-jackpot {
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-.math-line {
-  margin: 0.35rem 0 0;
-  font-size: 0.88rem;
-  color: var(--muted);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* Should-fix 5-9 */
-.header-actions-inline {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-.btn-icon {
-  padding: 0.35rem 0.55rem;
-  min-width: 2.1rem;
-  font-size: 1.05rem;
-  line-height: 1;
-}
-.status {
-  font-size: 0.8rem;
-}
-.yield-value {
-  color: var(--text);
-}
-.yield-label {
-  color: var(--muted);
-}
-.calc-details {
-  margin-top: 0.65rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-.calc-details summary {
-  cursor: pointer;
-  color: var(--muted);
-}
-.calc-details p {
-  margin: 0.5rem 0 0;
-  max-width: 48rem;
-  line-height: 1.45;
+  .skeleton {
+    animation: none;
+  }
 }
