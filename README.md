@@ -48,28 +48,6 @@ pytest -q                 # includes a live calottery.com check; skipped if offl
 pytest -q -m "not network"  # fixture + tax math only
 ```
 
-## Install on Umbrel (Community App)
-
-Umbrel can run custom Docker Compose apps via **Community Apps**.
-
-### Option A — copy onto the Umbrel host
-
-1. Copy this project to your Umbrel (e.g. via `scp` or git clone on the node).
-2. In the Umbrel UI, open **App Store → Community** (or custom/community apps) and add/install from the folder that contains `docker-compose.yml` and `umbrel-app.yml`.
-3. Start the app. It exposes port **8742**.
-4. Visit `http://umbrel.local:8742` (or your Umbrel hostname / IP).
-
-### Option B — run compose directly on the node
-
-```bash
-# On the Umbrel host, after cloning/copying the project
-docker compose up --build -d
-```
-
-The Umbrel host needs **outbound HTTPS** to `www.calottery.com`.
-
-Exact Community App install paths vary slightly by Umbrel OS version; if the UI install flow differs, running `docker compose` on the host is always sufficient.
-
 ## What each number means
 
 | Label | Meaning |
@@ -90,7 +68,6 @@ ca-lottery-aftertax/
   tests/
   Dockerfile
   docker-compose.yml
-  umbrel-app.yml
   requirements.txt
 ```
 
